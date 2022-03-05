@@ -16,7 +16,7 @@ func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.I
 	// Create image copy (for faster pixel read and write)
 	bounds := cover_img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
-	new_img := image.NewRGBA(bounds)
+	new_img := image.NewNRGBA(bounds)
 	draw.Draw(new_img, bounds, cover_img, bounds.Min, draw.Src)
 
 	// Iterate through all pixels and embed data
@@ -59,7 +59,7 @@ func ExtractLsb(bitplane_args []string, input_img image.Image) ([]bool, error) {
 	// Open image as readable object
 	bounds := input_img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
-	parsable_img := image.NewRGBA(bounds)
+	parsable_img := image.NewNRGBA(bounds)
 	draw.Draw(parsable_img, bounds, input_img, bounds.Min, draw.Src)
 
 	// bitstream := ""

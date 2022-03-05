@@ -31,7 +31,7 @@ by flipping the bit to match that of the secret data.`,
 var embedCmd = &cobra.Command{
 	Use:   "embed",
 	Short: "Embed data",
-	Long:  "Embed a secret within an image.",
+	Long:  "Embed a secret within an image via Least Significant Bit steganography.",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Ensure we get at least 1 import
 		if len(args) < 1 {
@@ -77,7 +77,7 @@ var embedCmd = &cobra.Command{
 var extractCmd = &cobra.Command{
 	Use:   "extract",
 	Short: "Extract data",
-	Long:  "Extract secret data from within an image.",
+	Long:  "Extract secret data from within an image via Least Significant Bit steganography.",
 	RunE: func(cmd *cobra.Command, bitplane_args []string) error {
 		// Open input file
 		input_file_path, _ := cmd.Flags().GetString("input")
