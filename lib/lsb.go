@@ -6,7 +6,7 @@ import (
 	"image/draw"
 )
 
-func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.Image) (image.Image, error) {
+func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.Image, order string) (image.Image, error) {
 	// Parse bitplans operation input
 	bitplane_operations, err := BitplaneArgsToArray(bitplane_args)
 	if err != nil {
@@ -21,10 +21,24 @@ func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.I
 
 	// Iterate through all pixels and embed data
 	secret_pos := 0
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			// Get RGBA values for pixel
-			index := (y*width + x) * 4
+	// Determine whether to iterate via rows or cols
+	var xy_1 int
+	var xy_2 int
+	if order == "row" {
+		xy_1, xy_2 = height, width
+	} else {
+		xy_1, xy_2 = width, height
+	}
+	for a := 0; a < xy_1; a++ {
+		for b := 0; b < xy_2; b++ {
+			// Determine pixel value based on whether we are iterating by row or col
+			var index int
+			if order == "row" {
+				index = (a*width + b) * 4
+			} else {
+				index = (b * width * 4) + (a * 4)
+			}
+			// Get pixel colours
 			pix := new_img.Pix[index : index+4]
 			for _, embed_instruction := range bitplane_operations {
 				// Get bit position and colour from instruction
@@ -49,7 +63,7 @@ func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.I
 	return new_img, nil
 }
 
-func ExtractLsb(bitplane_args []string, input_img image.Image) ([]bool, error) {
+func ExtractLsb(bitplane_args []string, input_img image.Image, order string) ([]bool, error) {
 	// Parse bitplans operation input
 	bitplane_operations, err := BitplaneArgsToArray(bitplane_args)
 	if err != nil {
@@ -62,13 +76,26 @@ func ExtractLsb(bitplane_args []string, input_img image.Image) ([]bool, error) {
 	parsable_img := image.NewNRGBA(bounds)
 	draw.Draw(parsable_img, bounds, input_img, bounds.Min, draw.Src)
 
-	// bitstream := ""
+	// Determine which way to read image
+	var xy_1 int
+	var xy_2 int
+	if order == "row" {
+		xy_1, xy_2 = height, width
+	} else {
+		xy_1, xy_2 = width, height
+	}
 	var bitstream = make([]bool, height*width*len(bitplane_operations))
 	bitstream_pos := 0
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for a := 0; a < xy_1; a++ {
+		for b := 0; b < xy_2; b++ {
+			// Determine pixel value based on whether we are iterating by row or col
+			var index int
+			if order == "row" {
+				index = (a*width + b) * 4
+			} else {
+				index = (b * width * 4) + (a * 4)
+			}
 			// Get RGBA values for pixel
-			index := (y*width + x) * 4
 			pix := parsable_img.Pix[index : index+4]
 			for _, embed_instruction := range bitplane_operations {
 				colour := embed_instruction[0].(int)

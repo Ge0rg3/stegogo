@@ -41,6 +41,7 @@ var embedCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, bitplane_args []string) error {
 		// Parse input flags
+		is_column_order, _ := cmd.Flags().GetBool("column")
 		secret_file_path, _ := cmd.Flags().GetString("secret")
 		cover_file_path, _ := cmd.Flags().GetString("cover")
 		output_file_path, _ := cmd.Flags().GetString("output")
@@ -57,8 +58,14 @@ var embedCmd = &cobra.Command{
 			return err
 		}
 
+		// Check order
+		order := "row"
+		if is_column_order {
+			order = "col"
+		}
+
 		// Run embed operation
-		edited_img, err := lib.EmbedLsb(bitplane_args, secret_bits, img)
+		edited_img, err := lib.EmbedLsb(bitplane_args, secret_bits, img, order)
 		if err != nil {
 			return err
 		}
@@ -79,18 +86,30 @@ var extractCmd = &cobra.Command{
 	Short: "Extract data",
 	Long:  "Extract secret data from within an image via Least Significant Bit steganography.",
 	RunE: func(cmd *cobra.Command, bitplane_args []string) error {
-		// Open input file
+		// Parse input flags
+		is_column_order, _ := cmd.Flags().GetBool("column")
 		input_file_path, _ := cmd.Flags().GetString("input")
 		output_file_path, _ := cmd.Flags().GetString("output")
+
+		// Open input file
 		input_img, err := lib.OpenImage(input_file_path)
 		if err != nil {
 			return err
 		}
-		extracted_bits, err := lib.ExtractLsb(bitplane_args, input_img)
+
+		// Check order
+		order := "row"
+		if is_column_order {
+			order = "col"
+		}
+
+		// Run extraction
+		extracted_bits, err := lib.ExtractLsb(bitplane_args, input_img, order)
 		if err != nil {
 			return err
 		}
 
+		// Write to file
 		bytes_arr := lib.BitstreamToBytes(extracted_bits)
 		ioutil.WriteFile(output_file_path, bytes_arr, 0644)
 		return nil
@@ -103,7 +122,9 @@ func init() {
 	lsbCmd.AddCommand(embedCmd)
 	lsbCmd.AddCommand(extractCmd)
 
-	// Add persistent flags
+	// Add flags
+	lsbCmd.PersistentFlags().Bool("column", false, "(Default false) Optionally embed/extract data column-by-column instead of row-by-row.")
+
 	embedCmd.Flags().StringP("secret", "s", "", "(Required) A file to be embedded in the image.")
 	embedCmd.Flags().StringP("cover", "c", "", "(Required) A cover image data embedded within.")
 	embedCmd.Flags().StringP("output", "o", "output.png", "(Default 'output.png') Output image path.")
