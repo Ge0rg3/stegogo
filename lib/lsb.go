@@ -19,6 +19,12 @@ func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.I
 	new_img := image.NewNRGBA(bounds)
 	draw.Draw(new_img, bounds, cover_img, bounds.Min, draw.Src)
 
+	// Check number of values per pixel in image
+	values_per_pixel, err := GetValuesPerPixel(cover_img)
+	if err != nil {
+		return nil, err
+	}
+
 	// Iterate through all pixels and embed data
 	secret_pos := 0
 	// Determine whether to iterate via rows or cols
@@ -34,12 +40,12 @@ func EmbedLsb(bitplane_args []string, secret_bitstream []bool, cover_img image.I
 			// Determine pixel value based on whether we are iterating by row or col
 			var index int
 			if order == "row" {
-				index = (a*width + b) * 4
+				index = (a*width + b) * values_per_pixel
 			} else {
-				index = (b * width * 4) + (a * 4)
+				index = (b * width * values_per_pixel) + (a * values_per_pixel)
 			}
 			// Get pixel colours
-			pix := new_img.Pix[index : index+4]
+			pix := new_img.Pix[index : index+values_per_pixel]
 			for _, embed_instruction := range bitplane_operations {
 				// Get bit position and colour from instruction
 				colour := embed_instruction[0].(int)
@@ -76,6 +82,12 @@ func ExtractLsb(bitplane_args []string, input_img image.Image, order string) ([]
 	parsable_img := image.NewNRGBA(bounds)
 	draw.Draw(parsable_img, bounds, input_img, bounds.Min, draw.Src)
 
+	// Check number of values per pixel in image
+	values_per_pixel, err := GetValuesPerPixel(input_img)
+	if err != nil {
+		return nil, err
+	}
+
 	// Determine which way to read image
 	var xy_1 int
 	var xy_2 int
@@ -91,12 +103,12 @@ func ExtractLsb(bitplane_args []string, input_img image.Image, order string) ([]
 			// Determine pixel value based on whether we are iterating by row or col
 			var index int
 			if order == "row" {
-				index = (a*width + b) * 4
+				index = (a*width + b) * values_per_pixel
 			} else {
-				index = (b * width * 4) + (a * 4)
+				index = (b * width * values_per_pixel) + (a * values_per_pixel)
 			}
 			// Get RGBA values for pixel
-			pix := parsable_img.Pix[index : index+4]
+			pix := parsable_img.Pix[index : index+values_per_pixel]
 			for _, embed_instruction := range bitplane_operations {
 				colour := embed_instruction[0].(int)
 				bit_pos := embed_instruction[1].(int)

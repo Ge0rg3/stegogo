@@ -2,8 +2,10 @@ package lib
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/png"
 	"os"
 	"strconv"
@@ -123,4 +125,32 @@ func OpenImage(image_path string) (image.Image, error) {
 		return nil, err
 	}
 	return img, nil
+}
+
+func GetValuesPerPixel(img image.Image) (int, error) {
+	/*
+		Determine how many ints per pixel.
+		i.e., RGB would have 3: R, G and B
+			  RGBA would have 4: R, G, B and A
+	*/
+	var ints_per_pixel int
+	switch img.ColorModel() {
+	case color.GrayModel, color.Gray16Model, color.AlphaModel, color.Alpha16Model:
+		ints_per_pixel = 1
+	case color.RGBAModel, color.RGBA64Model, color.NRGBAModel, color.NRGBA64Model:
+		ints_per_pixel = 4
+	default:
+		ints_per_pixel = -1
+	}
+	if ints_per_pixel == -1 {
+		return 0, errors.New("invalid image type")
+	}
+	return ints_per_pixel, nil
+}
+
+func Abs(a int) int {
+	if a < 0 {
+		return a * -1
+	}
+	return a
 }

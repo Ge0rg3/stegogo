@@ -18,7 +18,7 @@ import (
 // lsbCmd represents the lsb command
 var lsbCmd = &cobra.Command{
 	Use:   "lsb",
-	Short: "Least Significant Bit Steganography",
+	Short: "Least Significant Bit",
 	Long: `Least Significant Bit (LSB) Steganography is a technique where
 a secret bitstream is embedded into different bits of each pixel in an image
 by flipping the bit to match that of the secret data.`,
@@ -28,7 +28,7 @@ by flipping the bit to match that of the secret data.`,
 	},
 }
 
-var embedCmd = &cobra.Command{
+var lsbEmbedCmd = &cobra.Command{
 	Use:   "embed",
 	Short: "Embed data",
 	Long:  "Embed a secret within an image via Least Significant Bit steganography.",
@@ -81,7 +81,7 @@ var embedCmd = &cobra.Command{
 	},
 }
 
-var extractCmd = &cobra.Command{
+var lsbExtractCmd = &cobra.Command{
 	Use:   "extract",
 	Short: "Extract data",
 	Long:  "Extract secret data from within an image via Least Significant Bit steganography.",
@@ -119,20 +119,20 @@ var extractCmd = &cobra.Command{
 func init() {
 	// Add commands
 	rootCmd.AddCommand(lsbCmd)
-	lsbCmd.AddCommand(embedCmd)
-	lsbCmd.AddCommand(extractCmd)
+	lsbCmd.AddCommand(lsbEmbedCmd)
+	lsbCmd.AddCommand(lsbExtractCmd)
 
 	// Add flags
 	lsbCmd.PersistentFlags().Bool("column", false, "(Default false) Optionally embed/extract data column-by-column instead of row-by-row.")
 
-	embedCmd.Flags().StringP("secret", "s", "", "(Required) A file to be embedded in the image.")
-	embedCmd.Flags().StringP("cover", "c", "", "(Required) A cover image data embedded within.")
-	embedCmd.Flags().StringP("output", "o", "output.png", "(Default 'output.png') Output image path.")
-	embedCmd.MarkFlagRequired("secret")
-	embedCmd.MarkFlagRequired("cover")
+	lsbEmbedCmd.Flags().StringP("secret", "s", "", "(Required) A file to be embedded in the image.")
+	lsbEmbedCmd.Flags().StringP("cover", "c", "", "(Required) A cover image data embedded within.")
+	lsbEmbedCmd.Flags().StringP("output", "o", "output.png", "(Default 'output.png') Output image path.")
+	lsbEmbedCmd.MarkFlagRequired("secret")
+	lsbEmbedCmd.MarkFlagRequired("cover")
 
-	extractCmd.Flags().StringP("input", "i", "", "(Required) Input file with embedded data inside.")
-	extractCmd.Flags().StringP("output", "o", "extracted.dat", "(Default 'output.dat') Output extracted data file.")
-	extractCmd.MarkFlagRequired("input")
+	lsbExtractCmd.Flags().StringP("input", "i", "", "(Required) Input file with embedded data inside.")
+	lsbExtractCmd.Flags().StringP("output", "o", "extracted.dat", "(Default 'output.dat') Output extracted data file.")
+	lsbExtractCmd.MarkFlagRequired("input")
 
 }
