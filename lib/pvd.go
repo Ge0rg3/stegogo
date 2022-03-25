@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"math"
 	"strconv"
+	"strings"
 )
 
 func CreateRangeTableArray(range_widths []string) ([][]int, error) {
@@ -20,7 +21,8 @@ func CreateRangeTableArray(range_widths []string) ([][]int, error) {
 		// Convert range string to int, i.e., "16" to 16
 		range_int, err := strconv.Atoi(range_str)
 		if err != nil {
-			return range_table, errors.New("invalid range width list given")
+			err_msg := fmt.Sprintf("invalid range width item '%s' given", range_str)
+			return range_table, errors.New(err_msg)
 		}
 		// Add start and end position to range table
 		range_table[index] = []int{start, start + range_int - 1}
@@ -43,12 +45,37 @@ func checkRangeTable(range_table [][]int, pixel_difference int) (int, int) {
 	return 0, 0
 }
 
-func EmbedPvd(cover_img image.Image, range_table [][]int, secret_bits string, direction string, zigzag bool) (image.Image, error) {
-	// Get image details
+func EmbedPvd(cover_img image.Image, range_table [][]int, secret_bits string, direction string, zigzag bool, plane string) (image.Image, error) {
+	/*
+		Embed a binstring ("11001011") into an image from a given range table, in
+		either "row" or "column" direction, optionally in zigzag pattern.
+	*/
+	// Get R/G/B/A plane if given
+	rgba_index, err := RgbaToInt(plane)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get image details and create new type based off given input
 	bounds := cover_img.Bounds()
+	gray_img := image.NewGray(bounds)
+	rgba_img := image.NewRGBA(bounds)
 	width, height := bounds.Max.X, bounds.Max.Y
-	new_img := image.NewGray(bounds)
-	draw.Draw(new_img, bounds, cover_img, bounds.Min, draw.Src)
+	draw.Draw(gray_img, bounds, cover_img, bounds.Min, draw.Src)
+	draw.Draw(rgba_img, bounds, cover_img, bounds.Min, draw.Src)
+
+	// Check number of values per pixel in image
+	values_per_pixel, err := GetValuesPerPixel(cover_img)
+	if err != nil {
+		return nil, err
+	}
+	var pix_arr []uint8
+	if values_per_pixel == 1 {
+		pix_arr = gray_img.Pix
+	} else {
+		pix_arr = rgba_img.Pix
+	}
+
 	// Vars for keeping track of state between pixels
 	first_in_pair := true
 	previous_index := -1
@@ -79,9 +106,9 @@ func EmbedPvd(cover_img image.Image, range_table [][]int, secret_bits string, di
 		for b := start_b; b != end_b; b += step_b {
 			var index int
 			if direction == "row" {
-				index = (a * width) + b
+				index = ((a*width)+b)*values_per_pixel + rgba_index
 			} else {
-				index = (b * width) + a
+				index = (b * width * values_per_pixel) + a + rgba_index
 			}
 			// Iteration process now complete. PVD logic per pixel now starts
 			if first_in_pair {
@@ -90,7 +117,7 @@ func EmbedPvd(cover_img image.Image, range_table [][]int, secret_bits string, di
 				first_in_pair = false
 			} else {
 				// Get difference between current pixel and previous pixel
-				pixel_difference := int(new_img.Pix[previous_index]) - int(new_img.Pix[index])
+				pixel_difference := int(pix_arr[previous_index]) - int(pix_arr[index])
 				// Find minimum range and number of embeddable bits using range table
 				min_range, bit_count := checkRangeTable(range_table, Abs(pixel_difference))
 				// Calculate what data to embed
@@ -112,22 +139,153 @@ func EmbedPvd(cover_img image.Image, range_table [][]int, secret_bits string, di
 				}
 				m /= 2
 
+				prev_val := int(pix_arr[previous_index])
+				curr_val := int(pix_arr[index])
 				if pixel_difference%2 == 0 {
-					new_img.Pix[previous_index] -= uint8(math.Floor(m))
-					new_img.Pix[index] += uint8(math.Ceil(m))
+					prev_val -= int(math.Floor(m))
+					curr_val += int(math.Ceil(m))
 				} else {
-					new_img.Pix[previous_index] -= uint8(math.Ceil(m))
-					new_img.Pix[index] += uint8(math.Floor(m))
+					prev_val -= int(math.Ceil(m))
+					curr_val += int(math.Floor(m))
 				}
+
+				// Fix overflowing values
+				if prev_val < 0 {
+					curr_val += prev_val * -1
+					prev_val = 0
+				} else if curr_val < 0 {
+					prev_val += curr_val * -1
+					curr_val = 0
+				} else if prev_val > 255 {
+					curr_val -= (prev_val - 255)
+					prev_val = 255
+				} else if curr_val > 255 {
+					prev_val -= (curr_val - 255)
+					curr_val = 255
+				}
+
+				pix_arr[previous_index] = uint8(prev_val)
+				pix_arr[index] = uint8(curr_val)
+
 				secret_position += bit_count
 				first_in_pair = true
 			}
 			if secret_position >= len(secret_bits) {
-				return new_img, nil
+				if values_per_pixel == 1 {
+					return gray_img, nil
+				} else {
+					return rgba_img, nil
+				}
 			}
 
 		}
 	}
 	fmt.Printf("WARNING: Image too small with given secret -- only %d/%d bits embedded.\n", secret_position, len(secret_bits))
-	return new_img, nil
+	if values_per_pixel == 1 {
+		return gray_img, nil
+	} else {
+		return rgba_img, nil
+	}
+}
+
+func ExtractPvd(img image.Image, range_table [][]int, direction string, zigzag bool, plane string) ([]byte, error) {
+	// Get R/G/B/A plane if given
+	rgba_index, err := RgbaToInt(plane)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get image details
+	bounds := img.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
+
+	// Check number of values per pixel in image
+	var pix_arr []uint8
+	values_per_pixel, err := GetValuesPerPixel(img)
+	if err != nil {
+		return nil, err
+	}
+	if values_per_pixel == 1 {
+		gray_img := image.NewGray(bounds)
+		draw.Draw(gray_img, bounds, img, bounds.Min, draw.Src)
+		pix_arr = gray_img.Pix
+	} else {
+		rgba_img := image.NewRGBA(bounds)
+		draw.Draw(rgba_img, bounds, img, bounds.Min, draw.Src)
+		pix_arr = rgba_img.Pix
+	}
+
+	first_in_pair := true
+	previous_index := -1
+	var extracted_binstring strings.Builder
+
+	// Iterate through pixels in given order, based off: https://gist.github.com/Ge0rg3/282dd5671d755acbf13352a7ae8e2d5e
+	start_a, start_b := 0, 0
+	step_a, step_b := 1, 1
+	end_a, end_b := height, width
+	if direction != "row" {
+		end_a, end_b = width, height
+	}
+	for a := start_a; a < end_a; a += step_a {
+		// Flip direction of row/col if in zigzag pattern
+		if zigzag {
+			if a%2 == 1 {
+				start_b = end_b - 1
+				end_b, step_b = -1, -1
+			} else {
+				start_b = 0
+				step_b = 1
+				end_b = width
+				if direction != "row" {
+					end_b = height
+				}
+			}
+		}
+		for b := start_b; b != end_b; b += step_b {
+			var index int
+			if direction == "row" {
+				index = ((a*width)+b)*values_per_pixel + rgba_index
+			} else {
+				index = (b * width * values_per_pixel) + a + rgba_index
+			}
+			// Iteration process now complete. PVD logic per pixel now starts
+			if first_in_pair {
+				// If first in pixel pair, continue to next
+				previous_index = index
+				first_in_pair = false
+			} else {
+				// Get difference between current pixel and previous pixel
+				abs_pixel_difference := Abs(int(pix_arr[previous_index]) - int(pix_arr[index]))
+				// Find minimum range and number of embeddable bits using range table
+				min_range, bit_count := checkRangeTable(range_table, abs_pixel_difference)
+				// Extract binary from difference
+				secret := abs_pixel_difference - min_range
+				secret_binary := ZeroLeftPad(strconv.FormatInt(int64(secret), 2), bit_count)
+				extracted_binstring.WriteString(secret_binary)
+				first_in_pair = true
+			}
+		}
+	}
+	// Convert to bytes
+	output_bytes := BitstringToBytes(extracted_binstring.String())
+	return output_bytes, nil
+}
+
+func RgbaToInt(s string) (int, error) {
+	var colour int
+	// Get R/G/B/A from first char
+	first_char := s[0]
+	switch first_char {
+	case 'R':
+		colour = Red
+	case 'G':
+		colour = Green
+	case 'B':
+		colour = Blue
+	case 'A':
+		colour = Alpha
+	default:
+		return -1, errors.New("invalid plane given. Only R/G/B/A are valid")
+	}
+	return colour, nil
 }

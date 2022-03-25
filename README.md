@@ -13,5 +13,23 @@ stegogo lsb extract --input cats.png R0 B2 R1
 ```
 * Embed `secret.zip` within `cats.png` in the Alpha 0 plane, column by column:
 ```
-stegogo lsb embed --secret secret.txt --cover cats.png --output cats.png --column A0
+stegogo lsb embed --secret secret.zip --cover cats.png --output cats.png --column A0
+```
+
+### PVD
+* Embed `secret.txt` file within `cats.png` greyscale image with default range widths (8 8 16 32 64 128):
+```
+stegogo pvd embed --secret secret.txt --cover cats.png --output cats_secret.png
+```
+* Extract secret data from `cats_secret.png` greyscale image with default range widths (8 8 16 32 64 128).
+```
+stegogo pvd extract --input cats_secret.png --output secret.dat
+```
+* Embed `secret.png` file within `cats.png` greyscale image in columnar order, with zigzag, with custom range widths (2 2 4 4 4 8 8 16 16 32 32 64 64):
+```
+stegogo pvd embed --secret secret.png --cover cats.png --output cats_secret.png --direction column --zigzag 2 2 4 4 4 8 8 16 16 32 32 64 64
+```
+* Extract secret data from `cats_secret.png` greyscale image in columnar order, with zigzag, with custom range widths (2 2 4 4 4 8 8 16 16 32 32 64 64):
+```
+stegogo pvd extract --input cats_secret.png --output secret.dat --direction column --zigzag 2 2 4 4 4 8 8 16 16 32 32 64 64
 ```

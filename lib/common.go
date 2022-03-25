@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -107,6 +108,27 @@ func BitstreamToBytes(bitstream []bool) []byte {
 	return bytes_arr
 }
 
+func BitstringToBytes(bitstring string) []byte {
+	/*
+		Convert a string of bits (i.e., "10101") to bytes array.
+	*/
+	var output_bytes []byte
+	var str string
+	for i := 0; i < len(bitstring); i += 8 {
+		if i+8 > len(bitstring) {
+			str = string(bitstring[i:])
+		} else {
+			str = string(bitstring[i : i+8])
+		}
+		bin_int, err := strconv.ParseUint(str, 2, 8)
+		if err != nil {
+			panic(err)
+		}
+		output_bytes = append(output_bytes, byte(bin_int))
+	}
+	return output_bytes
+}
+
 func OpenImage(image_path string) (image.Image, error) {
 	/*
 		Open file as image
@@ -153,4 +175,13 @@ func Abs(a int) int {
 		return a * -1
 	}
 	return a
+}
+
+func ZeroLeftPad(s string, max_len int) string {
+	pad_count := max_len - len(s)
+	if pad_count < 0 {
+		return s
+	}
+	padded_str := strings.Repeat("0", pad_count) + s
+	return padded_str[(len(padded_str) - max_len):]
 }
