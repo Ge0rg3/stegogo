@@ -126,7 +126,7 @@ func init() {
 	lsbCmd.PersistentFlags().Bool("column", false, "(Default false) Optionally embed/extract data column-by-column instead of row-by-row.")
 
 	lsbEmbedCmd.Flags().StringP("secret", "s", "", "(Required) A file to be embedded in the image.")
-	lsbEmbedCmd.Flags().StringP("cover", "c", "", "(Required) A cover image data embedded within.")
+	lsbEmbedCmd.Flags().StringP("cover", "c", "", "(Required) A cover image to have data embedded within.")
 	lsbEmbedCmd.Flags().StringP("output", "o", "output.png", "(Default 'output.png') Output image path.")
 	lsbEmbedCmd.MarkFlagRequired("secret")
 	lsbEmbedCmd.MarkFlagRequired("cover")
