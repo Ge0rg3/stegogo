@@ -1,6 +1,3 @@
-/*
-	Copyright © 2022 George Omnet stegogo@georgeom.net
-*/
 package cmd
 
 import (

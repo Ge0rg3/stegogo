@@ -5,6 +5,7 @@ go 1.17
 require github.com/spf13/cobra v1.3.0
 
 require (
+	github.com/bamiaux/rez v0.0.0-20170731184118-29f4463c688b // indirect
 	github.com/dsoprea/go-exif/v3 v3.0.0-20210625224831-a6301f85c82b // indirect
 	github.com/dsoprea/go-iptc v0.0.0-20200609062250-162ae6b44feb // indirect
 	github.com/dsoprea/go-jpeg-image-structure/v2 v2.0.0-20210512043942-b434301c6836 // indirect

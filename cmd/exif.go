@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -62,8 +58,6 @@ var exifExtractCmd = &cobra.Command{
 			if len(bytesArr) > 500 {
 				bytesArr = bytesArr[:500]
 			}
-			fmt.Println(bytesArr)
-			fmt.Println("---")
 		}
 		return nil
 	},
