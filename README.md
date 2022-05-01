@@ -33,3 +33,29 @@ stegogo pvd embed --secret secret.png --cover cats.png --output cats_secret.png 
 ```
 stegogo pvd extract --input cats_secret.png --output secret.dat --direction column --zigzag 2 2 4 4 4 8 8 16 16 32 32 64 64
 ```
+
+### Exif
+* Embed `secret.txt` file within `cats.png`, in the `ProcessingSoftware` EXIF tag:
+```
+stegogo exif -i cats.png -s secret.txt
+```
+* Extract all EXIF tags from `cats.png`:
+```
+stegogo exif -i cats.png
+```
+
+### Bit Plane Steganography
+* Embed a black and white image `bw.png` within `cats.png`, in the R0, B0 and G0 planes:
+```
+stegogo bp embed -c cats.png -s bw.png -o hidden.png R0 G0
+```
+* Extract a hidden image from `cats.png` only if there are bits in both the R0 and G0 planes:
+```
+stegogo bp extract -i cats.png -o hidden.png R0 G0
+```
+
+### Peak Signal-to-Noise Ratio
+* Read the PSNR of `a.png` and `b.png`:
+```
+stegogo psnr -i a.png -c b.png
+```
