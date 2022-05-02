@@ -159,12 +159,14 @@ func GetValuesPerPixel(img image.Image) (int, error) {
 	switch img.ColorModel() {
 	case color.GrayModel, color.Gray16Model, color.AlphaModel, color.Alpha16Model:
 		ints_per_pixel = 1
-	case color.RGBAModel, color.RGBA64Model, color.NRGBAModel, color.NRGBA64Model:
+	case color.RGBAModel, color.RGBA64Model, color.NRGBAModel, color.NRGBA64Model, color.YCbCrModel:
 		ints_per_pixel = 4
 	default:
 		ints_per_pixel = -1
 	}
 	if ints_per_pixel == -1 {
+		col := color.RGBA{}
+		fmt.Printf("Unknown colour type: %T\n", img.ColorModel().Convert(col))
 		return 0, errors.New("invalid image type")
 	}
 	return ints_per_pixel, nil
