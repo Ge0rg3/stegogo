@@ -69,6 +69,7 @@ var exifEmbedCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Parse inputs
 		input_image_path, _ := cmd.Flags().GetString("image")
+		output_file_path, _ := cmd.Flags().GetString("output")
 		exif_tag, _ := cmd.Flags().GetString("exiftag")
 		secret_data_path, _ := cmd.Flags().GetString("secret")
 
@@ -123,7 +124,7 @@ var exifEmbedCmd = &cobra.Command{
 		sl.SetExif(ib)
 		b := new(bytes.Buffer)
 		sl.Write(b)
-		ioutil.WriteFile("out.jpeg", b.Bytes(), 0644)
+		ioutil.WriteFile(output_file_path, b.Bytes(), 0644)
 		return nil
 
 	},
@@ -137,9 +138,11 @@ func init() {
 	exifEmbedCmd.Flags().StringP("image", "i", "", "(Required) Input image with EXIF data inside.")
 	exifEmbedCmd.Flags().StringP("exiftag", "e", "ProcessingSoftware", "(Optional) New EXIF tag name.")
 	exifEmbedCmd.Flags().StringP("secret", "s", "", "(Required) Secret data filename to be embedded within EXIF tag.")
-	exifExtractCmd.Flags().StringP("image", "i", "", "(Required) Input image with EXIF data inside.")
+	exifEmbedCmd.Flags().StringP("output", "o", "output.jpg", "(Default 'output.jpg') Output image path.")
 	exifEmbedCmd.MarkFlagRequired("image")
 	exifEmbedCmd.MarkFlagRequired("secret")
+
+	exifExtractCmd.Flags().StringP("image", "i", "", "(Required) Input image with EXIF data inside.")
 	exifExtractCmd.MarkFlagRequired("image")
 
 }
