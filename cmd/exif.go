@@ -29,6 +29,8 @@ var exifExtractCmd = &cobra.Command{
 	Short: "Extract/read data",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input_file_path, _ := cmd.Flags().GetString("image")
+		input_tag, _ := cmd.Flags().GetString("tag")
+		output_file_path, _ := cmd.Flags().GetString("output")
 		rawExif, err := exif.SearchFileAndExtractExif(input_file_path)
 		if err != nil {
 			return err
@@ -50,13 +52,21 @@ var exifExtractCmd = &cobra.Command{
 			if tag.IsThumbnailOffset() {
 				continue
 			}
-			fmt.Println(tag.TagName())
 			bytesArr, err := tag.GetRawBytes()
 			if err != nil {
 				return err
 			}
-			if len(bytesArr) > 500 {
-				bytesArr = bytesArr[:500]
+			if input_tag == "" {
+				// If input tag not given, display tag to user
+				if len(bytesArr) > 100 {
+					bytesArr = bytesArr[:100]
+				}
+				fmt.Printf("**********\n%s:\n%s\n", tag.TagName(), string(bytesArr))
+			} else {
+				// Otherwise, dump tag to file
+				if input_tag == tag.TagName() {
+					ioutil.WriteFile(output_file_path, bytesArr, 0644)
+				}
 			}
 		}
 		return nil
@@ -143,6 +153,8 @@ func init() {
 	exifEmbedCmd.MarkFlagRequired("secret")
 
 	exifExtractCmd.Flags().StringP("image", "i", "", "(Required) Input image with EXIF data inside.")
+	exifExtractCmd.Flags().StringP("tag", "t", "", "(Optional) Exif tag name to save raw data from. Otherwise, snippers from all tags will be shown.")
+	exifExtractCmd.Flags().StringP("output", "o", "output.dat", "(Default 'output.dat') Output file name for tag dump.")
 	exifExtractCmd.MarkFlagRequired("image")
 
 }
