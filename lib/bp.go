@@ -25,6 +25,7 @@ func EmbedBitplane(bitplane_args []string, cover_img image.Image, secret_img ima
 	draw.Draw(new_secret_img, secret_bounds, secret_img, secret_bounds.Min, draw.Src)
 
 	// Fit secret within cover
+	original_secret_width := secret_width
 	if secret_width > cover_width {
 		secret_width = cover_width
 	}
@@ -45,7 +46,7 @@ func EmbedBitplane(bitplane_args []string, cover_img image.Image, secret_img ima
 	// Iterate through image
 	for y := 0; y < secret_height; y++ {
 		for x := 0; x < secret_width; x++ {
-			secret_index := (y*secret_width + x) * secret_values_per_pixel
+			secret_index := (y*original_secret_width + x) * secret_values_per_pixel
 			for _, embed_instruction := range bitplane_operations {
 				cover_index := (y*cover_width + x) * cover_values_per_pixel
 				// Get bit position and colour from instruction
